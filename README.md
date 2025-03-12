@@ -1,4 +1,4 @@
-<h1> Automated_Threat_Detection_Response </h1>
+<h1> Automated Threat Detection Response </h1>
 
  <h2>Description</h2>
 This project integrates Wazuh, Shuffle, and TheHive to automate threat detection and response. Wazuh monitors security events and detects anomalies, triggering alerts. Shuffle enriches and processes incidents, forwarding them to TheHive for investigation. Automated response actions mitigate threats, enhancing SOC efficiency.<br/>
