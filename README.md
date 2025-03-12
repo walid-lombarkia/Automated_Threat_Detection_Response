@@ -21,9 +21,10 @@ System Diagram<br/>
 
 <h2>Environments Used </h2>
 
-- <b>Windows 11</b>
+- <b>Windows 10 Client (Endpoint with Wazuh agent)</b>
+- <b>Linux (Ubuntu 22.04 lts) running Wazuh Manager, Shuffle, and TheHive</b>
+- <b>Cloud (Digital Ocean)</b>
 
-<h2>Program walk-through:</h2>
 
 
  
