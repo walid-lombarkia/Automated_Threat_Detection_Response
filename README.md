@@ -343,7 +343,34 @@ Created an organization `Dotcom` with two users:
 
 **5. Telegram Notification** *(Send message to SOC analyst)*
 Sends a real-time alert to the analyst's Telegram bot, prompting investigation.
- 
+#### 5a. Telegram Bot Setup
+
+1. Open Telegram → search `@BotFather` → type `/newbot`
+2. Follow instructions → save the bot token
+3. Search `@userinfobot` → type `/start` → save your Chat ID
+4. Open your bot in Telegram and send it any message first
+   (required before it can send you messages)
+
+#### 5b. Telegram node configuration in Shuffle
+
+- App: Telegram Bot
+- Action: Send message
+- API token: ( BotFather token for our bot)
+- Chat ID: (Chat ID from @userinfobot)
+- Text:
+  ```
+   Mimikatz Activity Detected on host: $exec.text.win.system.computer
+   Process Id: $exec.text.win.eventdata.processId
+   Commandline: $exec.text.win.eventdata.commandLine
+   Description -> Mimikatz Detected on host:$exec.text.win.system.computer
+  ```
+The completed workflow connects all components:
+
+  <img width="700" height="550" alt="image" src="https://github.com/user-attachments/assets/c8da80fa-1cdc-47dd-be8a-c828602643fe" />
+
+ And the result: </br>
+  <img width="400" height="250" alt="image" src="https://github.com/user-attachments/assets/0ce4379a-d5bb-4e28-bdd5-8b00f6684e5a" />
+
 ## 🔄 End-to-End Flow Summary
  
 ```
