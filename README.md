@@ -371,16 +371,139 @@ The completed workflow connects all components:
  And the result: </br>
   <img width="400" height="250" alt="image" src="https://github.com/user-attachments/assets/0ce4379a-d5bb-4e28-bdd5-8b00f6684e5a" />
 
+## Phase 2: AI Alert Summarizer — The SOC Co-Pilot
+
+
+The problem this solves: Alert fatigue is the #1 challenge in every SOC. Analysts waste minutes reading raw JSON just to answer "what is this alert telling me?" This phase plugs a local AI model directly into the existing Shuffle pipeline. By the time an analyst opens TheHive, the AI has already written a structured triage note automatically.
+
+
+The VMware GPU Problem & Why We Run Ollama on the Host
+
+The problem: If your Ubuntu Server runs inside VMware Workstation, your VM cannot access your physical GPU.
+
+The solution: Keep all project code inside the Ubuntu VM. Let the host machine handle the heavy AI inference via network.
+
+### 6 — Install Ollama 
+
+```
+irm https://ollama.com/install.ps1 | iex
+```
+<img width="462" height="120" alt="image" src="https://github.com/user-attachments/assets/bf59393c-1d2b-47e4-a5c8-9c294e473df3" />
+
+
+### 7 — Expose Ollama to the VM Network
+ 
+By default Ollama only accepts connections from `localhost`. You need to expose it over the VMware network.
+ 
+**Set the environment variable on Windows:**
+1. Open **Start** → search **"Environment Variables"**
+2. Under System variables → **New**
+3. Name: `OLLAMA_HOST` | Value: `0.0.0.0`
+4. Run llama3.1
+ ```
+"%USERPROFILE%\AppData\Local\Programs\Ollama\ollama.exe" run llama3.1
+```
+ <img width="1302" height="252" alt="image" src="https://github.com/user-attachments/assets/36847649-318a-41e6-897d-a7fd848452af" />
+
+**Verify connectivity from the Ubuntu VM:**
+```bash
+curl http://192.168.0.157:11434/api/generate -d '{
+  "model": "llama3.1",
+  "prompt": "Hello, are you online?",
+  "stream": false
+}'
+```
+ 
+Response:
+```json
+{"model":"llama3.1","response":"Yes, I am online!","done":true}
+```
+ 
+---
+ 
+### 8 — Add the Ollama Node to Shuffle
+ 
+Open your existing Shuffle workflow. After the **VirusTotal** node and before **TheHive**, add a new **HTTP node**.
+ 
+Rename it to: `Ollama SOC Copilot`
+<img width="852" height="467" alt="image" src="https://github.com/user-attachments/assets/c147edf9-0041-4f1b-8aa5-5e6bb5460b56" />
+
+
+| Field | Value |
+|---|---|
+| Call Type | `POST` |
+| URL | `http://192.168.0.157:11434/api/generate` |
+| Content-Type | `application/json` |
+ 
+**Body:**
+```json
+{
+  "model": "llama3.1",
+  "stream": false,
+  "prompt": "You are a SOC analyst writing a triage note. Respond with EXACTLY 3 bullet points, no other text. CRITICAL: Replace all backslashes with forward slashes in any file paths.\n• WHAT HAPPENED: [the attack technique in one sentence]\n• KEY INDICATORS: [the executable name, SHA256 hash, and user]\n• RECOMMENDED ACTION: [what the analyst should do immediately]\n\nAlert data:\nHost: $exec.text.win.system.computer\nUser: $exec.text.win.eventdata.user\nProcess: $exec.text.win.eventdata.image\nOriginal name: $exec.text.win.eventdata.originalFileName\nCommand: $exec.text.win.eventdata.commandLine\nMITRE Technique: $exec.text.win.eventdata.ruleName\nSHA256: $sha256.group_0.0\nParent process: $exec.text.win.eventdata.parentImage\nIntegrity level: $exec.text.win.eventdata.integrityLevel"
+}
+``` 
+---
+ 
+### 9 — Update the TheHive Node
+ 
+In your TheHive alert creation node, update the **Description** field:
+ 
+```
+AI TRIAGE Llama 3.1 via Ollama:/n
+$ollama_soc_copilot.body.response
+ 
+```
+ 
+Update **sourceRef** to prevent duplicate alert errors across runs:
+```
+$exec.rule_id-$exec.id
+```
+ 
+---
+ 
+ 
+### Result — AI-Enriched Alert in TheHive
+ 
+When you open TheHive, every alert now shows:
+ <img width="1136" height="717" alt="image" src="https://github.com/user-attachments/assets/adf67b0c-a8c1-4a95-8ed6-2408b5cf134c" />
+ 
+---
+ 
+### Variable Reference Map
+ 
+| Data Point | Shuffle Variable |
+|---|---|
+| Alert title | `$exec.title` |
+| Wazuh rule ID | `$exec.rule_id` |
+| Unique event ID | `$exec.id` |
+| Timestamp | `$exec.timestamp` |
+| Hostname | `$exec.text.win.system.computer` |
+| Malware image path | `$exec.text.win.eventdata.image` |
+| Original filename | `$exec.text.win.eventdata.originalFileName` |
+| Command line | `$exec.text.win.eventdata.commandLine` |
+| Affected user | `$exec.text.win.eventdata.user` |
+| MITRE technique | `$exec.text.win.eventdata.ruleName` |
+| Integrity level | `$exec.text.win.eventdata.integrityLevel` |
+| Parent process | `$exec.text.win.eventdata.parentImage` |
+| SHA256 (extracted) | `$sha256.group_0.0` |
+| VT file ID | `$virustotal.0.body.data.id` |
+| **AI triage note** | **`$ollama_soc_copilot.body.response`** |
+ 
+---
+ 
 ## 🔄 End-to-End Flow Summary
  
 ```
-1. Mimikatz executed on Windows endpoint (even if renamed)
-2. Sysmon logs Event ID 1 (Process Create) with originalFileName = mimikatz.exe
-3. Wazuh agent forwards log → Wazuh Manager matches Rule 100002
-4. Wazuh fires webhook → Shuffle receives JSON alert
-5. Shuffle extracts SHA-256 hash via regex
-6. Shuffle queries VirusTotal → confirms malicious (66 engines)
-7. Shuffle creates alert in TheHive with full context
-8. Telegram bot notifies SOC analyst
-9. Analyst logs into TheHive, reviews case, begins investigation
+1.  Mimikatz executed on Windows endpoint (even if renamed to mimisafe.exe)
+2.  Sysmon logs Event ID 1 (Process Create) — originalFileName = mimikatz.exe
+3.  Wazuh agent forwards log → Wazuh Manager matches Rule 100002
+4.  Wazuh fires webhook → Shuffle receives JSON alert
+5.  Shuffle extracts SHA-256 hash via regex
+6.  Shuffle queries VirusTotal → confirms malicious
+7.  Shuffle sends alert data to Ollama (Llama 3.1 on host GPU)
+8.  AI generates 3-bullet triage note in plain English
+9.  Shuffle creates alert in TheHive — AI note at the top, raw context below
+10. Telegram bot notifies SOC analyst in real time
+11. Analyst opens TheHive — triage is already done
 ```
