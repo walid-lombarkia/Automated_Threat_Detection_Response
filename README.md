@@ -371,7 +371,7 @@ The completed workflow connects all components:
  And the result: </br>
   <img width="400" height="250" alt="image" src="https://github.com/user-attachments/assets/0ce4379a-d5bb-4e28-bdd5-8b00f6684e5a" />
 
-## Phase 2: AI Alert Summarizer — The SOC Co-Pilot
+## Phase 2:  AI Alert Summarizer — Local LLM via Ollama Provider
 
 
 The problem this solves: Alert fatigue is the #1 challenge in every SOC. Analysts waste minutes reading raw JSON just to answer "what is this alert telling me?" This phase plugs a local AI model directly into the existing Shuffle pipeline. By the time an analyst opens TheHive, the AI has already written a structured triage note automatically.
