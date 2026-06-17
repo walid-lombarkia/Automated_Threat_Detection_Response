@@ -493,6 +493,8 @@ When you open TheHive, every alert now shows:
 ---
  
 ## 🔄 End-to-End Flow Summary
+<img width="1280" height="698" alt="image" src="https://github.com/user-attachments/assets/18576ea0-aa4e-415c-8f4a-f38eb9282e9a" />
+
  
 ```
 1.  Mimikatz executed on Windows endpoint (even if renamed to mimisafe.exe)
